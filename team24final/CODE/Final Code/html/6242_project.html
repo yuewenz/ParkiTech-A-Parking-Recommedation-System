@@ -1,0 +1,459 @@
+<html>
+<head>
+    <title>Project</title>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+        #map {
+            height: 100%;
+            width: 75%;
+        }
+        /* Optional: Makes the sample page fill the window. */
+        html, body {
+            height: 100%;
+            margin: 5px;
+            padding: 0;
+        }
+        #map #infowindow-content {
+            display: inline;
+        }
+        #right-panel {
+            font-family: 'Roboto','sans-serif';
+            line-height: 60px;
+            padding-left: 20px;
+        }
+
+        #right-panel select, #right-panel input {
+            font-size: 50px;
+        }
+
+        #right-panel select {
+            width: 120%;
+        }
+
+        #right-panel i {
+            font-size: 50px;
+        }
+        #right-panel {
+            height: 150%;
+            float: right;
+            width: 590px;
+            overflow: auto;
+        }
+        .buttonClass1 {
+            background:    #fef8f1;
+            border:        0px solid #556699;
+            border-radius: 0px;
+            box-shadow:    0 0px #444444;
+            width:         150px;
+            height:        100px;
+            color:         #919DE1;
+            display:       inline-block;
+            font:          normal normal 40px/40px "Ubuntu", Vista;
+            text-align:    center;
+            text-shadow:   0px 0px #1f1933;
+        }
+        .buttonClass2 {
+            background:    #f8f9fa;
+            border:        0px solid #556699;
+            border-radius: 0px;
+            box-shadow:    0 0px #444444;
+            width:         150px;
+            height:        100px;
+            color:         #919DE1;
+            display:       inline-block;
+            font:          normal normal 40px/40px "Ubuntu", Vista;
+            text-align:    center;
+            text-shadow:   0px 0px #1f1933;
+        }
+        .buttonClass3 {
+            background:    #ffcc00;
+            border:        0px solid ;
+            border-radius: 0px;
+            box-shadow:    0 0px;
+            width:         620px;
+            height:        30px;
+            color:         #000000;
+            display:       inline-block;
+            font:          normal normal 23px/23px "Ubuntu", Vista;
+            font-weight:   bold;
+            text-align:    center;
+        }
+        #floating-panel {
+            position: absolute;
+            top: 10px;
+            left: 25%;
+            z-index: 5;
+            background-color: #fff;
+            padding: 5px;
+            border: 1px solid #999;
+            text-align: center;
+            font-family: 'Roboto','sans-serif';
+            line-height: 30px;
+            padding-left: 10px;
+        }
+        .pac-controls label {
+            font-family: Roboto;
+            font-size: 13px;
+            font-weight: 300;
+        }
+
+    </style>
+</head>
+
+<body>
+<button class="buttonClass3" style="position:absolute; left:0px;top:0px">CSE6242 ParkiTech</button>
+<div>
+    <input id="pac-input_origin" type="text" size="55" maxlength="8"
+           placeholder="Enter origin" style=" position:absolute; left:0px;top:40px">
+    <input id="pac-input_destination" type="text" size="55" maxlength="8"
+           placeholder="Enter destination" style="position:absolute; left:0px;top:70px">
+</div>
+<div>
+    <input type="button" value="Show Results" onclick="clickStart()" style="font-weight:bold;width:180px;height:50px;position:absolute; left:430px;top:100px">
+    <input type="button" id="222" value="Confirm" onclick="clickRequest(this)" style="font-weight:bold;width:180px;height:50px;position:absolute; left:430px;top:40px">
+</div>
+<div id="floating-panel" style="position:absolute;left:30px;top:100px">
+    <b>Favorite Places: </b>
+    <select id="mode">
+        <option value="home">home</option>
+        <option value="corporation">corporation</option>
+        <option value="gym">gym</option>
+        <option value="grocery">grocery</option>
+    </select>
+</div>
+<div id="right-panel"  style="position:absolute; left:0px;top:700px"></div>
+<div id="pic1" style="border:1px solid #eee;width:200px;height:160px; position:absolute; left:200px;top:1135px"></div>
+<div id="pic2" style="border:1px solid #eee;width:200px;height:160px; position:absolute; left:400px;top:1135px"></div>
+<div id="map" style="position:absolute;left:620px;top:0px"></div>
+<div id="output0" style="position:absolute;left:180px;top:175px"></div>
+<div id="output1" style="position:absolute;left:180px;top:285px"></div>
+<div id="output2" style="position:absolute;left:180px;top:395px"></div>
+<div id="output3" style="position:absolute;left:180px;top:505px"></div>
+<div id="output4" style="position:absolute;left:180px;top:615px"></div>
+<button id="btn1" class="buttonClass1"  style="position:absolute; left:0px;top:160px">1</button>
+<button id="btn2" class="buttonClass2"  style="position:absolute; left:0px;top:270px">2</button>
+<button id="btn3" class="buttonClass1"  style="position:absolute; left:0px;top:380px">3</button>
+<button id="btn4" class="buttonClass2"  style="position:absolute; left:0px;top:490px">4</button>
+<button id="btn5" class="buttonClass1"  style="position:absolute; left:0px;top:600px">5</button>
+
+<script>
+    //we get the following information from Jincheng Zhu
+    var locations=[];
+    var origins=[{lat: 37.722718467150005, lng: -122.37828776905},//home
+                 {lat: 37.682718467150005, lng: -122.38228776905},//company
+                 {lat: 37.742718467150005, lng: -122.37928776905},//gym
+                 {lat: 37.662718467150005, lng: -122.38528776905}];//type in location
+    //here is a default address for draw the map initially
+    var myorigin = {lat: 37.722718467150005, lng: -122.38828776905};//here we set a default origin address
+
+    function initMap() {
+        /*
+        //we are at atlanta
+        if (navigator.geolocation)
+        {
+            navigator.geolocation.getCurrentPosition(function(position)
+            {
+                origin = {lat: position.coords.latitude, lng: position.coords.longitude};
+                origins[0]=origin;
+            }
+            );
+        }
+        */
+        var map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 18,
+            center: myorigin
+        });
+        //---------------------------
+
+
+        var input = document.getElementById('pac-input_origin');
+        var autocomplete = new google.maps.places.Autocomplete(input);
+        autocomplete.bindTo('bounds', map);
+        autocomplete.setFields(['address_components', 'geometry', 'icon', 'name']);
+        autocomplete.addListener('place_changed', function()
+        {
+            var place = autocomplete.getPlace();
+            if (!place.geometry)
+            {
+                // User entered the name of a Place that was not suggested and
+                // pressed the Enter key, or the Place Details request failed.
+                window.alert("No details available for input: '" + place.name + "'");
+                return;
+            }
+            var address = '';
+            if (place.address_components)
+            {
+                address = [
+                    (place.address_components[0] && place.address_components[0].short_name || ''),
+                    (place.address_components[1] && place.address_components[1].short_name || ''),
+                    (place.address_components[2] && place.address_components[2].short_name || '')
+                ].join(' ');
+            }
+        });
+
+        var input2 = document.getElementById('pac-input_destination');
+        var autocomplete2 = new google.maps.places.Autocomplete(input2);
+        autocomplete2.bindTo('bounds', map);
+        autocomplete2.setFields(['address_components', 'geometry', 'icon', 'name']);
+        autocomplete2.addListener('place_changed', function()
+        {
+            var place2 = autocomplete2.getPlace();
+            if (!place2.geometry)
+            {
+                // User entered the name of a Place that was not suggested and
+                // pressed the Enter key, or the Place Details request failed.
+                window.alert("No details available for input: '" + place2.name + "'");
+                return;
+            }
+            var address2 = '';
+            if (place2.address_components)
+            {
+                address2 = [
+                    (place2.address_components[0] && place2.address_components[0].short_name || ''),
+                    (place2.address_components[1] && place2.address_components[1].short_name || ''),
+                    (place2.address_components[2] && place2.address_components[2].short_name || '')
+                ].join(' ');
+            }
+        });
+        //---------------------------------------------------------------------//
+
+        var directionsRenderer = new google.maps.DirectionsRenderer;
+        var directionsService = new google.maps.DirectionsService;
+        var map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 14,
+            center: myorigin
+        });
+        directionsRenderer.setMap(map);
+        directionsRenderer.setPanel(document.getElementById('right-panel'));
+        //////////////////////////////////////////////////////////////////////
+        var switcher=0;
+        //var  myselect=document.getElementById("mode");
+        //------------------------this part may be cancelled------------------//
+        document.getElementById('mode').addEventListener('change', function() {
+            var  myselect=document.getElementById("mode");
+            var index=myselect.selectedIndex ;
+            switcher=myselect.options[index].value;
+            if(switcher=="home")
+            {
+               myorigin=origins[0];
+            }
+            if(switcher=="corporation")
+            {
+                myorigin=origins[1];
+            }
+            if(switcher=="gym")
+            {
+                myorigin=origins[2];
+            }
+            if(switcher=="grocery")
+            {
+                myorigin=origins[3];
+            }
+            calculateAndDisplayRoute(directionsService, directionsRenderer,0,myorigin);
+            //when in the project html, I only change the origin
+        });
+        //--------------------------------------------------------------------//
+
+        var btn1 = document.getElementById("btn1");//this syntax is OK
+        addEvent(btn1, "click", function () {calculateAndDisplayRoute(directionsService, directionsRenderer, 0,myorigin);});
+        var btn2 = document.getElementById("btn2");//this syntax is OK
+        addEvent(btn2, "click", function () {calculateAndDisplayRoute(directionsService, directionsRenderer, 1,myorigin);});
+        var btn3 = document.getElementById("btn3");//this syntax is OK
+        addEvent(btn3, "click", function () {calculateAndDisplayRoute(directionsService, directionsRenderer, 2,myorigin);});
+        var btn4 = document.getElementById("btn4");//this syntax is OK
+        addEvent(btn4, "click", function () {calculateAndDisplayRoute(directionsService, directionsRenderer, 3,myorigin);});
+        var btn5 = document.getElementById("btn5");//this syntax is OK
+        addEvent(btn5, "click", function () {calculateAndDisplayRoute(directionsService, directionsRenderer, 4,myorigin);});
+    }
+    //------------------init map completed--------------------------------//
+
+    //this function is used to draw the navigation
+    function calculateAndDisplayRoute(directionsService, directionsRenderer,i,myorigin) {
+        var selectedMode = document.getElementById('mode').value;
+        directionsService.route({
+            origin: myorigin,
+            destination: locations[i],
+            travelMode: "DRIVING"
+        }, function (response, status) {
+            if (status == 'OK') {
+                directionsRenderer.setDirections(response);
+               } else {
+                window.alert('Directions request failed due to ' + status);
+            }
+        });
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    //添加事件的函数
+    function addEvent(ele, name, fn) {//元素   事件   回调函数
+        console.log(ele.attachEvent);
+        if(ele.attachEvent){//如果元素有attachEvent属性，就执行下面的代码
+            ele.attachEvent("on" + name, fn);
+        }else {//高级浏览器执行的方法
+            ele.addEventListener(name, fn);
+        }
+    }
+
+    var geocoder;
+    var new_locations=[];
+    function clickStart()
+    {
+        //-----------------read in the .csv file and update locations object----------------//
+
+        d3.csv("test.csv",function(error,csvdata){
+            if(error){
+                console.log(error);
+            }
+            console.log(csvdata);
+            //convert
+
+            for(var i=0;i<=4;i++)
+            {
+                var temp={};
+                temp.lat=parseFloat(csvdata[i].y);
+                temp.lng=parseFloat(csvdata[i].x);
+                new_locations.push(temp);
+            }
+            console.log(new_locations);
+            console.log(locations);
+        });
+
+        //locations=new_locations;
+        //----------------------------------------------------------------------------------//
+        //-------------------------------update information and write-----------------------//
+        
+        locations=new_locations;
+        var originAll=[myorigin];
+        var destinationAll=new_locations;
+        var service = new google.maps.DistanceMatrixService;
+        service.getDistanceMatrix({
+            origins: originAll,
+            destinations: destinationAll,
+            travelMode: 'DRIVING',
+            unitSystem: google.maps.UnitSystem.METRIC,
+            avoidHighways: false,
+            avoidTolls: false
+        }, function(response, status) {
+            if (status !== 'OK') {
+                //alert('Error was: ' + status);
+            } else {
+                var originList = response.originAddresses;
+                var destinationList = response.destinationAddresses;
+                for(var i=0;i<=4;i++)
+                {
+                    var outputDiv = document.getElementById('output' + i);
+                    outputDiv.innerHTML = '';
+                    var results = response.rows[0].elements;
+                    outputDiv.innerHTML += originList[0] + ' to ' + ': <br>' + destinationList[i] + ': <br>' + ' Distance: ' + results[i].distance.text + ' Time: ' + results[i].duration.text + '<br>';
+                }
+            }
+        });
+        //----------------------------------------------------------------------------------//
+    }
+    function clickRequest(val)
+    {
+        geocoder = new google.maps.Geocoder();
+        var addresso = document.getElementById("pac-input_origin").value;
+        geocoder.geocode( {'address': addresso}, function(results, status) {
+            if (status == google.maps.GeocoderStatus.OK)
+            {
+                customer_origin=results[0].geometry.location;
+            }
+            else {alert("Geocode was not successful for the following reason: " + status);}
+        });
+        var addressd = document.getElementById("pac-input_destination").value;
+        geocoder.geocode( {'address': addressd}, function(results, status) {
+            if (status == google.maps.GeocoderStatus.OK)
+            {
+                customer_destination=results[0].geometry.location;
+            }
+            else {alert("Geocode was not successful for the following reason: " + status);}
+        });
+        myorigin=customer_origin;
+        //-------------------------use google API to estimate a time------------//
+        var time;
+        var originAll=[addresso];
+        var destinationAll=[addressd];
+        var service = new google.maps.DistanceMatrixService;
+        service.getDistanceMatrix({
+            origins: originAll,
+            destinations: destinationAll,
+            travelMode: 'DRIVING',
+            unitSystem: google.maps.UnitSystem.METRIC,
+            avoidHighways: false,
+            avoidTolls: false
+        }, function(response, status) {
+            if (status !== 'OK') {
+                alert('Error was: ' + status);
+            } else {
+                var originList = response.originAddresses;
+                var destinationList = response.destinationAddresses;
+
+                //var outputDiv = document.getElementById('output');
+                //outputDiv.innerHTML = '';
+                for (var i = 0; i < originList.length; i++)
+                {
+                    var results = response.rows[i].elements;
+                    for (var j = 0; j < results.length; j++)
+                    {
+                        time=results[j].duration;
+                        //outputDiv.innerHTML += originList[i] + ' to ' + destinationList[j] + ': <br>' + ' Distance: ' + results[j].distance.text + ' Time: ' + results[j].duration.text + '<br>';
+                    }
+                }
+            }
+        });
+
+        //-------------------------send server request--------------------------//
+        var str_origin=""+customer_origin
+        var str_destination=""+customer_destination
+        var xmlhttp;
+        xmlhttp=new XMLHttpRequest();
+        var url="http://localhost:8000";
+        var newurl;
+        time=25;
+        var str_time= ""+time;
+        newurl=url+"/?greeting="+str_origin+","+str_destination+","+str_time;
+        xmlhttp.open("GET",newurl,true);
+        xmlhttp.send();
+        //----------------------------------------------------------------------//
+        var countdown=0;
+        settime(val,countdown);
+    }
+
+    function settime(val,countdown) {
+        var obj2=document.getElementById("222")
+        if (countdown == 6) {
+            obj2.removeAttribute("disabled");
+            obj2.value="Ready";
+            countdown = 0;
+            return false;
+        } else {
+            obj2.setAttribute("disabled", true);
+            obj2.value="Loading(" + countdown + ") s";
+            countdown++;
+        }
+        setTimeout(function() {
+            settime(val,countdown);
+        },1000);
+    }
+
+    window.onload = function (){
+        var bigImg1 = document.createElement("img");
+        bigImg1.src="gt_buzz_logo.gif";
+        var pic1 = document.getElementById('pic1');
+        pic1.appendChild(bigImg1);
+
+        var bigImg2 = document.createElement("img");
+        bigImg2.src="georgia-tech-logo.png";
+        var pic2 = document.getElementById('pic2');
+        pic2.appendChild(bigImg2);
+
+    };
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?&language=en&key=AIzaSyAZqiJ3qriggjGu0J9-107W9Toxlu0vUnk&libraries=places&callback=initMap"
+        async defer></script>
+</body>
+</html>
+
+
